@@ -21,12 +21,13 @@ Por padrão, é gerado um login cujo usuário é user e a senha é gerada toda v
 
 Com esse login, ao fazer uma requisição para a API, a URI não será bloqueada. 
 Esse login padrão só deve ser usado a nível de desenvolvimento. Nunca para produção.
-
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
+
+
 
 ## IMPLEMENTANDO NOSSA PRÓPRIA AUTENTICAÇÃO
 ### CRIAR ENTIDADE USUÁRIO
@@ -90,11 +91,11 @@ spring.jpa.hibernate.ddl-auto=create: cria o esquema, destruindo os dados anteri
 
 spring.jpa.hibernate.ddl-auto=create-drop: descarta o esquema no final da sessão.
 ~~~~
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 ## CRIANDO REPOSITORY E SERVICE DE AUTENTICAÇÃO 
 ~~~~
 public interface UserModelRepository extends JpaRepository<UserModel, Long> {
@@ -119,11 +120,11 @@ public class AuthenticationService implements UserDetailsService {
 ~~~~
 Como visto no código, o  método loadUserByUsername(String username) recebe o nome do usuário e o busca no banco de dados para verificar se ele existe. Por isso devemos injetar a interface UserModelRepository, pois iremos chamar o método findByName(String name) para buscar o usuário pelo nome.
 
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 ## CRIANDO CLASSE CONFIGURAÇÕES DE SEGURANÇA
 A próxima alteração é configurar o Spring Security para ele não usar o processo de segurança tradicional, o stateful. Como estamos trabalhando com uma API Rest, o processo de autenticação precisa ser stateless.
 ~~~~
@@ -168,11 +169,11 @@ Onde:
 * and().build() cria o objeto SecurityFilterChain que o método deve retornar.
 
 Após essa implementação, todos os endpoints ficarão desbloqueados novamente. Será preciso configurar o que é liberado e o que é protegido (Será visto como fazer mais a frente).
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 ## CRIANDO CONTROLLER QUE DISPARA PROCESSO DE AUTENTICAÇÃO
 ### CRIANDO DTO COM DADOS DE LOGIN
@@ -306,11 +307,11 @@ Para isso, vamos simular uma coleção para compilarmos o projeto. Não usaremos
 
 
 * E os métodos public boolean isAccountNonExpired(),  public boolean isAccountNonLocked(),  public boolean isCredentialsNonExpired() e public boolean isEnabled() devem retornar true.
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 ## CRIANDO DE FATO O CÓDIGO DO CONTROLLER DE AUTENTICAÇÃO
 ~~~
@@ -334,11 +335,11 @@ public class AuthenticationController {
 Onde:
  * var token = new UsernamePasswordAuthenticationToken(authenticationDto.getLogin(), authenticationDto.getPassword()) esse token é o login e a senha, e já está sendo representado no DTO do usuário. No entanto, esse DTO não é o parâmetro esperado pelo Spring, ele espera uma classe dele próprio - e não uma classe do projeto.
 Portanto, na variável token criamos a classe que representa o usuário e a senha. Após o new, instanciamos um objeto do tipo UsernamePasswordAuthenticationToken() passando como parâmetro o login e senha do DTO.
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 ## GERANDO E DEVOLVENDO O TOKEN
 
@@ -352,11 +353,11 @@ Para pegar a biblioteca, podemos acessar o site https://jwt.io/. Clicar na segun
 Selecionaremos a primeira, a biblioteca em Java para gerar tokens em JWT do Auth0. Vamos clicar no link "View Repo", no canto inferior direito. Com isso, seremos redirecionados para o repositório da biblioteca no Github.
 
 Para instalar a biblioteca, vamos levar uma dependência para o Maven. Vamos copiar a tag de dependency abaixo da seção "Installation"
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 
 ## CRIANDO CLASSE SERVICE DE GERENCIAMENTO DE TOKEN
@@ -401,11 +402,11 @@ Com isso, caso o sistema não consiga acessar a variável de ambiente, ele utili
 Na linha acima do campo  private String secret;, passaremos a anotação @Value.
 Obs: Cuidado ao importar! Há o Value do Lombok e o value do Spring Framework. O que nos interessa é o segundo.
 Entre aspas, como parâmetro, passaremos "${api.security.token.secret}".
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 
 ## INJETANDO CLASSE SERVICE DE GERENCIAMENTO DE TOKEN NO CONTROLLER DE AUTENTICAÇÃO
@@ -439,11 +440,11 @@ E o método deve ficar assim:
     }
 
 ~~~
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 ### AUTORIZAÇÃO E CONTROLE DE ACESSO
 Quando disparamos uma requisição, é pela controller que ela passará primeiro. 
@@ -463,11 +464,11 @@ Filter é um dos recursos que fazem parte da especificação de Servlets, a qual
 É um recurso muito útil para isolar códigos de infraestrutura da aplicação, como, por exemplo, segurança, logs e auditoria, para que tais códigos não sejam duplicados e misturados aos códigos relacionados às regras de negócio da aplicação.
 Precisamos criar um filter, para interceptar requisições. O que queremos é fazer a validação do token antes que ele caia no controller. 
 Primeiramente vamos criar uma nova classe (Sugestão de nome: SecurityFilter) e passar a anotação @Component no código para que o Spring a carregue automaticamente. Vamos estender a classe OncePerRequestFilter do pacote jakarta.servlet e implementar seu método obrigatório doFilterInternal.
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 
 ### RECUPERANDO TOKEN
@@ -484,11 +485,11 @@ private String getToken(HttpServletRequest request) {
     }
 
 ~~~
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 ### VALIDANDO TOKEN
 
