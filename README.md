@@ -1,6 +1,6 @@
 ﻿# Poc-Spring-Security
 
-##ADICIONANDO DEPENDENCIA DO SPRING SECURITY
+## ADICIONANDO DEPENDENCIA DO SPRING SECURITY
 
 Adicione dentro da tag xx do pom.xml as seguintes dependências:
 
@@ -28,8 +28,8 @@ Esse login padrão só deve ser usado a nível de desenvolvimento. Nunca para pr
 
 ___
 
-##IMPLEMENTANDO NOSSA PRÓPRIA AUTENTICAÇÃO
-###CRIAR ENTIDADE USUÁRIO
+## IMPLEMENTANDO NOSSA PRÓPRIA AUTENTICAÇÃO
+### CRIAR ENTIDADE USUÁRIO
 
 Aqui criamos uma classe/entidade que irá representar nosso usuário no banco de dados
 ~~~
@@ -95,7 +95,7 @@ spring.jpa.hibernate.ddl-auto=create-drop: descarta o esquema no final da sessã
 &nbsp;
 
 ___
-##CRIANDO REPOSITORY E SERVICE DE AUTENTICAÇÃO 
+## CRIANDO REPOSITORY E SERVICE DE AUTENTICAÇÃO 
 ~~~~
 public interface UserModelRepository extends JpaRepository<UserModel, Long> {
     UserDetails findByName(String name); //Esse método será usado na service de autenticação
@@ -124,7 +124,7 @@ Como visto no código, o  método loadUserByUsername(String username) recebe o n
 &nbsp;
 
 ___
-##CRIANDO CLASSE CONFIGURAÇÕES DE SEGURANÇA
+## CRIANDO CLASSE CONFIGURAÇÕES DE SEGURANÇA
 A próxima alteração é configurar o Spring Security para ele não usar o processo de segurança tradicional, o stateful. Como estamos trabalhando com uma API Rest, o processo de autenticação precisa ser stateless.
 ~~~~
 @Configuration
@@ -143,50 +143,42 @@ public class SecurityConfigurations {
 ~~~~
 
 Onde:
-@Configuration informa ao Spring que essa é uma classe de configuração.
+* @Configuration informa ao Spring que essa é uma classe de configuração.
 
 
-@EnableWebSecurity informa ao Spring que vamos personalizar as configurações de segurança.
+* @EnableWebSecurity informa ao Spring que vamos personalizar as configurações de segurança.
 
 
- public SecurityFilterChain securityFilterChain(HttpSecurity http)  incluir a configuração do processo de autenticação, que precisa ser stateless. Ele retornará um objeto chamado SecurityFilterChain, do próprio Spring.
+ * public SecurityFilterChain securityFilterChain(HttpSecurity http)  incluir a configuração do processo de autenticação, que precisa ser stateless. Ele retornará um objeto chamado SecurityFilterChain, do próprio Spring.
 
 
-@Bean usando em um método irá expor o objeto devolvido pelo método para o Spring usar.
+* @Bean usando em um método irá expor o objeto devolvido pelo método para o Spring usar.
 
-SecurityFilterChain é usado para configurar o processo de autenticação e de autorização.
-
-
-http.csrf().disable(). Serve para desabilitarmos proteção contra ataques do tipo CSRF (Cross-Site Request Forgery). 
-
-Como vamos trabalhar com autenticação via tokens e o próprio token é já uma proteção contra esses tipos de ataques, ficaria repetitivo manter essa proteção habilitada.
+* SecurityFilterChain é usado para configurar o processo de autenticação e de autorização.
 
 
-.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) configura a autenticação para ser stateless.
+* http.csrf().disable(). Serve para desabilitarmos proteção contra ataques do tipo CSRF (Cross-Site Request Forgery). 
+
+* Como vamos trabalhar com autenticação via tokens e o próprio token é já uma proteção contra esses tipos de ataques, ficaria repetitivo manter essa proteção habilitada.
 
 
-and().build() cria o objeto SecurityFilterChain que o método deve retornar.
+* .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) configura a autenticação para ser stateless.
+
+
+* and().build() cria o objeto SecurityFilterChain que o método deve retornar.
 
 Após essa implementação, todos os endpoints ficarão desbloqueados novamente. Será preciso configurar o que é liberado e o que é protegido (Será visto como fazer mais a frente).
+&nbsp;
 
+&nbsp;
 
+___
 
-
-
-
-
-
-
-
-
-
-
-
-
-CRIANDO CONTROLLER QUE DISPARA PROCESSO DE AUTENTICAÇÃO
-CRIANDO DTO COM DADOS DE LOGIN
+## CRIANDO CONTROLLER QUE DISPARA PROCESSO DE AUTENTICAÇÃO
+### CRIANDO DTO COM DADOS DE LOGIN
 Precisamos criar um DTO com os dados que serão enviados pelo aplicativo front-end.
 Ele será recebido como argumento no método de autenticação do controller de autenticação.
+~~~
 @Getter
 @Setter
 @AllArgsConstructor
@@ -197,7 +189,7 @@ public class AuthenticationDto {
     private String password;
 }
 
-
+~~~~
 
 
 CRIANDO MÉTODO NA CLASSE DE CONFIGURAÇÕES DE SEGURANÇA QUE RETORNE OBJETO DE AUTHENTICATIONMANAGER
@@ -206,10 +198,12 @@ No arquivo do controller de autenticação, precisamos usar a classe Authenticat
 Vamos declarar o atributo na classe controller de autenticação. Deverá ser privado. Acima desse atributo, incluiremos a anotação @Autowired, para solicitar ao Spring a injeção desse parâmetro. Não somos nós que vamos instanciar esse objeto, e sim o Spring (Esse código e o código completo da controller de autenticação está aqui).
 A classe AuthenticationManager é do Spring. Porém, ele não injeta de forma automática o objeto AuthenticationManager, precisamos configurar isso no Spring Security. Como não configuramos, ele não cria o objeto AuthenticationManager e lança uma exceção.
 Precisamos implementar essa configuração e por ser uma configuração de segurança, faremos essa alteração na classe de configuração de segurança (Implementada aqui):
+~~~
 @Bean
 public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
                 return configuration.getAuthenticationManager();
                 }
+~~~
 Esse é o método que estamos informando ao Spring como injetar objetos. Portanto, acima dele incluiremos a anotação @Bean.
 
 CRIANDO MÉTODO NA CLASSE DE CONFIGURAÇÕES DE SEGURANÇA QUE RETORNE UM OBJETO BCRYPTPASSWORDENCODER
@@ -221,34 +215,24 @@ O Spring já oferece uma classe que criptograma a senha com algoritmo BCrypt que
 Considerando que no banco de dados estamos usando o formato BCrypt de hashing da senha. Como o Spring identifica que estamos usando o BCrypt? É preciso configurar isso.
 
 Por ser uma configuração de segurança, voltaremos à classe de configurações de segurança (Implementada aqui):
-
+~~~
 @Bean
     public PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
         }
-
+~~~
 Com isso, configuramos o Spring para usar esse algoritmo de hashing de senha.
+&nbsp;
 
+&nbsp;
 
+___
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-ALTERANDO CLASSE USERMODEL PARA IMPLEMENTAR INTERFACE USERDETAILS
+## ALTERANDO CLASSE USERMODEL PARA IMPLEMENTAR INTERFACE USERDETAILS
 Para o Spring Security identificar a classe usuário do nosso projeto, precisamos informar. Por exemplo, como ele vai saber qual atributo da classe que representa o usuário é o campo login? A forma para identificarmos isso é usando uma interface.
 Ela é a  interface chamada UserDetails (própria do Spring Security) na classe que representa o usuário e implementar todos os métodos obrigatórios.
 Sua classe que representa o usuário deverá ficar nesse formato:
+~~~
 @Entity
 @Table(name = "user_model")
 public class UserModel implements UserDetails {
@@ -305,33 +289,31 @@ public class UserModel implements UserDetails {
         return true;
     }
 }
-
+~~~
 Onde:
-public Collection<? extends GrantedAuthority> getAuthorities() precisamos devolver um objeto do tipo Collection chamado getAuthorities. Caso tenhamos um controle de permissão no projeto, por exemplo, perfis de acesso, é necessário criar uma classe que represente esses perfis.
+* public Collection<? extends GrantedAuthority> getAuthorities() precisamos devolver um objeto do tipo Collection chamado getAuthorities. Caso tenhamos um controle de permissão no projeto, por exemplo, perfis de acesso, é necessário criar uma classe que represente esses perfis.
 No nosso caso, não controlamos os perfis. Se o usuário estiver cadastrado, pode acessar qualquer tela sem restrições. Mas precisamos devolver para o Spring uma coleção representando os perfis
 
 Para isso, vamos simular uma coleção para compilarmos o projeto. Não usaremos, mas devolveremos um objeto válido para o Spring.
 
-No retorno, ao invés de null, vamos inserir List.of(). Dentro do parêntese, criaremos um objeto do tipo new SimpleGrantedAuthority(), sendo a classe do Spring que informa qual o perfil do usuário.Passaremos um perfil estático, em SimpleGrantedAuthority(). Por padrão, os perfis do Spring possuem um prefixo, ROLE_, e o nome do perfil. No caso, será USER.
+* No retorno, ao invés de null, vamos inserir List.of(). Dentro do parêntese, criaremos um objeto do tipo new SimpleGrantedAuthority(), sendo a classe do Spring que informa qual o perfil do usuário.Passaremos um perfil estático, em SimpleGrantedAuthority(). Por padrão, os perfis do Spring possuem um prefixo, ROLE_, e o nome do perfil. No caso, será USER.
 
 
-public String getPassword() deverá retornar o campo que contém sua senha/password
+* public String getPassword() deverá retornar o campo que contém sua senha/password
 
 
-public String getUsername() deverá retornar o campo que contém seu login/usuário/nome de usuário
+* public String getUsername() deverá retornar o campo que contém seu login/usuário/nome de usuário
 
 
-E os métodos public boolean isAccountNonExpired(),  public boolean isAccountNonLocked(),  public boolean isCredentialsNonExpired() e public boolean isEnabled() devem retornar true.
+* E os métodos public boolean isAccountNonExpired(),  public boolean isAccountNonLocked(),  public boolean isCredentialsNonExpired() e public boolean isEnabled() devem retornar true.
+&nbsp;
 
+&nbsp;
 
+___
 
-
-
-
-
-
-
-CRIANDO DE FATO O CÓDIGO DO CONTROLLER DE AUTENTICAÇÃO
+## CRIANDO DE FATO O CÓDIGO DO CONTROLLER DE AUTENTICAÇÃO
+~~~
 @RestController
 @RequestMapping("/auth")
 public class AuthenticationController {
@@ -347,24 +329,20 @@ public class AuthenticationController {
         return ResponseEntity.ok().build();
     }
 }
-
+~~~
 
 Onde:
- var token = new UsernamePasswordAuthenticationToken(authenticationDto.getLogin(), authenticationDto.getPassword()) esse token é o login e a senha, e já está sendo representado no DTO do usuário. No entanto, esse DTO não é o parâmetro esperado pelo Spring, ele espera uma classe dele próprio - e não uma classe do projeto.
+ * var token = new UsernamePasswordAuthenticationToken(authenticationDto.getLogin(), authenticationDto.getPassword()) esse token é o login e a senha, e já está sendo representado no DTO do usuário. No entanto, esse DTO não é o parâmetro esperado pelo Spring, ele espera uma classe dele próprio - e não uma classe do projeto.
 Portanto, na variável token criamos a classe que representa o usuário e a senha. Após o new, instanciamos um objeto do tipo UsernamePasswordAuthenticationToken() passando como parâmetro o login e senha do DTO.
+&nbsp;
 
+&nbsp;
 
+___
 
+## GERANDO E DEVOLVENDO O TOKEN
 
-
-
-
-
-
-
-GERANDO E DEVOLVENDO O TOKEN
-
-ADICIONANDO DEPENDÊNCIA BIBLIOTECA JWT
+### ADICIONANDO DEPENDÊNCIA BIBLIOTECA JWT
 Para adicionar a biblioteca Auth0 ao projeto. Ela será utilizada para gerar o token, seguindo o padrão JWT.
 
 Para pegar a biblioteca, podemos acessar o site https://jwt.io/. Clicar na segunda opção do menu superior do site, "Libraries". Lá, encontraremos uma lista com várias bibliotecas que geram tokens no padrão JWT.
@@ -374,20 +352,18 @@ Para pegar a biblioteca, podemos acessar o site https://jwt.io/. Clicar na segun
 Selecionaremos a primeira, a biblioteca em Java para gerar tokens em JWT do Auth0. Vamos clicar no link "View Repo", no canto inferior direito. Com isso, seremos redirecionados para o repositório da biblioteca no Github.
 
 Para instalar a biblioteca, vamos levar uma dependência para o Maven. Vamos copiar a tag de dependency abaixo da seção "Installation"
+&nbsp;
+
+&nbsp;
+
+___
 
 
-
-
-
-
-
-
-
-CRIANDO CLASSE SERVICE DE GERENCIAMENTO DE TOKEN
+## CRIANDO CLASSE SERVICE DE GERENCIAMENTO DE TOKEN
 Agora faremos a geração do token para incluí-lo na resposta.
 Faremos isso criando uma nova classe no projeto, para que possamos isolar o token, uma boa prática em programação. 
 Ela fará a geração, a validação e o que mais estiver relacionado aos tokens. 
-
+~~~
 @Service
 public class TokenService {
 @Value("${api.security.token.secret}") //Veja observação abaixo para entender essa anotação
@@ -410,12 +386,12 @@ public class TokenService {
         return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
     }
 }
-
+~~~
 Além do Issuer, Subject e data de expiração, podemos incluir outras informações no token JWT, de acordo com as necessidades da aplicação. Por exemplo, podemos incluir o id do usuário no token, bastando para isso utilizar o método withClaim:
 O método withClaim recebe dois parâmetros, sendo o primeiro uma String que identifica o nome do claim (propriedade armazenada no token), e o segundo a informação que se deseja armazenar. Esse método pode ser chamado quantas vezes quiser.
 
 
-SOBRE ANOTAÇÃO @VALUE
+### SOBRE ANOTAÇÃO @VALUE
 Passar a senha em texto dentro do código não é uma boa prática de segurança,é preciso fazer a leitura dessa senha de algum lugar.
 Para isso, podemos declarar o atributo dentro da classe service de gerenciamento de token, com a linha de código private String secret;.
 Em seguida, acessando o arquivo application.properties, criamos uma nova propriedade: api.security.token.secret=. Depois do =, pediremos para que o Spring leia essa informação a partir de uma variável de ambiente.
@@ -425,21 +401,17 @@ Com isso, caso o sistema não consiga acessar a variável de ambiente, ele utili
 Na linha acima do campo  private String secret;, passaremos a anotação @Value.
 Obs: Cuidado ao importar! Há o Value do Lombok e o value do Spring Framework. O que nos interessa é o segundo.
 Entre aspas, como parâmetro, passaremos "${api.security.token.secret}".
+&nbsp;
+
+&nbsp;
+
+___
 
 
-
-
-
-
-
-
-
-
-
-INJETANDO CLASSE SERVICE DE GERENCIAMENTO DE TOKEN NO CONTROLLER DE AUTENTICAÇÃO
+## INJETANDO CLASSE SERVICE DE GERENCIAMENTO DE TOKEN NO CONTROLLER DE AUTENTICAÇÃO
 Antes de injetar a classe que cria o token na classe controller de autenticação, é preciso criar uma DTO que represente esse token seguindo boas práticas.
-CRIANDO DTO TOKEN
-
+### CRIANDO DTO TOKEN
+~~~
 @Getter
 @Setter
 public class TokenDto {
@@ -450,11 +422,12 @@ public class TokenDto {
         this.type = type;
     }
 }
-
+~~~
 Agora podemos inserir a dependência da classe que cria o token e devolver o token na resposta do método que chama a autenticação (Na controller de autenticação criada aqui). A injeção ficará assim:
 @Autowired
     private TokenService tokenService;
 E o método deve ficar assim:
+~~~
 @PostMapping
     public ResponseEntity auth(@RequestBody @Valid AuthenticationDto authenticationDto){
         var authenticationToken = new UsernamePasswordAuthenticationToken(authenticationDto.getLogin(), authenticationDto.getPassword());
@@ -465,19 +438,14 @@ E o método deve ficar assim:
         return ResponseEntity.ok(new TokenDto(tokenJWT, "BEARER"));
     }
 
+~~~
+&nbsp;
 
+&nbsp;
 
+___
 
-
-
-
-
-
-
-
-
-
-AUTORIZAÇÃO E CONTROLE DE ACESSO
+### AUTORIZAÇÃO E CONTROLE DE ACESSO
 Quando disparamos uma requisição, é pela controller que ela passará primeiro. 
 Numa abordagem mais simplória, dentro do método referente a requisição feita, poderíamos criar a variável token e passar o if (token ==null). Levaríamos a variável ResponseEntity e seu returno para dentro da chaves.
 E, por fim, fora das chaves, construiremos um else para devolver o bloqueio da requisição. Porém, teríamos que passar esse código em todos os métodos e em todos os controllers. Portanto, não faz sentido aplicar esse método.
@@ -488,25 +456,24 @@ Depois que a requisição passa pelo DispatcherSevlet, os Handler Interceptors s
 Já os filters aparecem antes mesmo da execução do Spring, onde decidimos se a requisição será interrompida ou se chamaremos, ainda, outro filter.
 Portanto, precisaremos criar um filter ou um interceptor no nosso projeto, para que o código, com a validação do token, sejam colocado dentro deles. Ele terá, então, o papel de ser executado como o "interceptador" da requisição.
 Em outras palavras, a requisição passará pelo filtro antes de cair no controller.
-Continua…
 
-CRIANDO CLASSE DE FILTRO
+### CRIANDO CLASSE DE FILTRO
 
 Filter é um dos recursos que fazem parte da especificação de Servlets, a qual padroniza o tratamento de requisições e respostas em aplicações Web no Java. Ou seja, tal recurso não é específico do Spring, podendo assim ser utilizado em qualquer aplicação Java.
 É um recurso muito útil para isolar códigos de infraestrutura da aplicação, como, por exemplo, segurança, logs e auditoria, para que tais códigos não sejam duplicados e misturados aos códigos relacionados às regras de negócio da aplicação.
 Precisamos criar um filter, para interceptar requisições. O que queremos é fazer a validação do token antes que ele caia no controller. 
 Primeiramente vamos criar uma nova classe (Sugestão de nome: SecurityFilter) e passar a anotação @Component no código para que o Spring a carregue automaticamente. Vamos estender a classe OncePerRequestFilter do pacote jakarta.servlet e implementar seu método obrigatório doFilterInternal.
+&nbsp;
+
+&nbsp;
+
+___
 
 
-
-
-
-
-
-RECUPERANDO TOKEN
+### RECUPERANDO TOKEN
 
 Agora vamos implementar a lógica do nosso filtro, recuperando o token passado na requisição para posteriormente fazer sua validação.
-
+~~~
 private String getToken(HttpServletRequest request) {
         var authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null) {
@@ -516,23 +483,17 @@ private String getToken(HttpServletRequest request) {
         return null;        
     }
 
+~~~
+&nbsp;
 
+&nbsp;
 
+___
 
-
-
- 
-
-
-
-
-
-
-
-VALIDANDO TOKEN
+### VALIDANDO TOKEN
 
 Primeiro vamos precisar criar na classe service de gerenciamento do token (Criada aqui) um método que obtém o subject/usuário do token para que possamos chamar esse método na classe filter:
-
+~~~
 public String getSubject(String tokenJWT) {
         try {
             var algorithm = Algorithm.HMAC256(secret);
@@ -545,10 +506,11 @@ public String getSubject(String tokenJWT) {
             throw new RuntimeException("Token JWT inválido ou expirado!");
         }
     }
+~~~
 E após criar esse método, voltar na classe filter e injetar a classe service de gerenciamento do token (Criada aqui) e a classe repository que recupera o usuário do banco de dados.
 Agora alteramos nossa classe de configurações de segurança (Criada aqui) primeiro injetando a classe filter que estamos criando agora e no método que retorna SecurityFilterChain alteramos informando quais URLs serão liberadas e quais ficarão restritas a quem estiver autenticado:
 
-
+~~~
  @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf().disable()
@@ -562,20 +524,21 @@ Agora alteramos nossa classe de configurações de segurança (Criada aqui) prim
                 .build();
 
     }
+~~~
 
 Onde:
-.requestMatchers(HttpMethod.POST, "/auth").permitAll() define que a requisição POST com a URL /auth será liberada para todos.
+* .requestMatchers(HttpMethod.POST, "/auth").permitAll() define que a requisição POST com a URL /auth será liberada para todos.
 
 
-  .anyRequest().authenticated()  determina que qualquer URL que não foi configurada conforme o item anterior, só será acessada por que estiver autenticado.
+* .anyRequest().authenticated()  determina que qualquer URL que não foi configurada conforme o item anterior, só será acessada por que estiver autenticado.
 
 
- .and().addFilterBefore(securityFilter,UsernamePasswordAuthenticationFilter.class) diz que nosso filter deve ser chamado primeiro. 
+* .and().addFilterBefore(securityFilter,UsernamePasswordAuthenticationFilter.class) diz que nosso filter deve ser chamado primeiro. 
 O que acontece é que existe um filter padrão do Spring (UsernamePasswordAuthenticationFilter) que roda primeiro que qualquer outro filter. Se deixarmos assim, não conseguiremos nunca forçar uma autenticação.
 
 
 Agora voltando a classe filter, devemos deixar o método obrigatório implementado doFilterInternal como abaixo:
-
+~~~
 @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String tokenJWT = getToken(request);
@@ -588,10 +551,11 @@ Agora voltando a classe filter, devemos deixar o método obrigatório implementa
         }
         filterChain.doFilter(request, response);
     }
+~~~
 O código do método acima pede para que o Spring considere que a pessoa está logada, se for recebido um token válido. Para isso ele recupera o nome do usuário que tem no token, recupera esse usuário do banco através do seu nome e força uma autenticação.
 
 Como deve ficar a classe filter:
-
+~~~
 @Configuration
 public class SecurityFilter extends OncePerRequestFilter {
 
@@ -634,7 +598,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         return authorizationHeader.replace("Bearer ", "");
     }*/
 }
-
+~~~
 
 
 
