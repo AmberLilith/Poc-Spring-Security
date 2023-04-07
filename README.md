@@ -64,25 +64,25 @@ Para essa POC eu usei DB MYSQL.
 Nesse caso é preciso ou criar a tabela no MYSQL ou configurar seu application.properties com o seguinte código:
 
 Criando a tabela manualmente:
-
+~~~
 CREATE TABLE user_model(user_id bigint not null auto_increment, name varchar(100) NOT NULL, password varchar(255) NOT NULL, PRIMARY KEY(user_id));
-
+~~~
 Configurando  para o Spring Boot criar a tabela no banco baseado na classe user_model:
-~~~~
+~~~
 spring.datasource.url=jdbc:mysql://localhost:3306/poc_spring_security
 spring.datasource.username=root
 spring.datasource.password=123
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
 spring.jpa.hibernate.ddl-auto=create
-~~~~
+~~~
 Onde:
 
 Linha 1: Define o endereço do banco de dados. poc_spring_security é o nome do banco de dados que devemos já ter criado no MYSQL previamente.
 Linha 2: o nome do usuário do banco de dados
 Linha 3: A senha do banco de dados
 Linhas de 4 a 6: define drivers para criação de tabelas automaticamente sendo que:
-~~~~
+~~~
 spring.jpa.hibernate.ddl-auto=validate: valida o esquema, não faz alterações no banco de dados. 
 
 spring.jpa.hibernate.ddl-auto=update: atualiza o esquema. 
@@ -90,23 +90,23 @@ spring.jpa.hibernate.ddl-auto=update: atualiza o esquema.
 spring.jpa.hibernate.ddl-auto=create: cria o esquema, destruindo os dados anteriores. 
 
 spring.jpa.hibernate.ddl-auto=create-drop: descarta o esquema no final da sessão.
-~~~~
+~~~
 ___
 
 &nbsp;
 
 &nbsp;
 ## CRIANDO REPOSITORY E SERVICE DE AUTENTICAÇÃO 
-~~~~
+~~~
 public interface UserModelRepository extends JpaRepository<UserModel, Long> {
     UserDetails findByName(String name); //Esse método será usado na service de autenticação
 }
-~~~~
+~~~
 
 
 A classe service de autenticação que será chamada todas as vezes que o usuário fizer login.
  Para que o Spring saiba que é ela que vai ser a responsável por fazer o trabalho de autenticação, ela deve implementar a interface UserDetailsService e obviamente implementar o único método obrigatório que é o loadUserByUsername(String username):
-~~~~
+~~~
 @Service
 public class AuthenticationService implements UserDetailsService {
 
@@ -117,7 +117,7 @@ public class AuthenticationService implements UserDetailsService {
         return repository.findByName(username);
     }
 }
-~~~~
+~~~
 Como visto no código, o  método loadUserByUsername(String username) recebe o nome do usuário e o busca no banco de dados para verificar se ele existe. Por isso devemos injetar a interface UserModelRepository, pois iremos chamar o método findByName(String name) para buscar o usuário pelo nome.
 
 ___
@@ -127,7 +127,7 @@ ___
 &nbsp;
 ## CRIANDO CLASSE CONFIGURAÇÕES DE SEGURANÇA
 A próxima alteração é configurar o Spring Security para ele não usar o processo de segurança tradicional, o stateful. Como estamos trabalhando com uma API Rest, o processo de autenticação precisa ser stateless.
-~~~~
+~~~
 @Configuration
 @EnableWebSecurity
 public class SecurityConfigurations {
@@ -141,7 +141,7 @@ public class SecurityConfigurations {
         }
 
 }
-~~~~
+~~~
 
 Onde:
 * @Configuration informa ao Spring que essa é uma classe de configuração.
@@ -190,15 +190,15 @@ public class AuthenticationDto {
     private String password;
 }
 
-~~~~
+~~~
 
 
-CRIANDO MÉTODO NA CLASSE DE CONFIGURAÇÕES DE SEGURANÇA QUE RETORNE OBJETO DE AUTHENTICATIONMANAGER
-O processo de autenticação está na classe AutenticacaoService (Implementada aqui). Precisamos chamar o método loadUserByUsername, já que é ele que usa o repository para efetuar o select no banco de dados, porém, não chamamos a classe service de forma direta no Spring Security. Temos outra classe do Spring que chamaremos e é ela quem vai chamar a AutenticacaoService.
+### CRIANDO MÉTODO NA CLASSE DE CONFIGURAÇÕES DE SEGURANÇA QUE RETORNE OBJETO DE AUTHENTICATIONMANAGER
+O processo de autenticação está na classe AutenticacaoService. Precisamos chamar o método loadUserByUsername, já que é ele que usa o repository para efetuar o select no banco de dados, porém, não chamamos a classe service de forma direta no Spring Security. Temos outra classe do Spring que chamaremos e é ela quem vai chamar a AutenticacaoService.
 No arquivo do controller de autenticação, precisamos usar a classe AuthenticationManager do Spring, responsável por disparar o processo de autenticação.
-Vamos declarar o atributo na classe controller de autenticação. Deverá ser privado. Acima desse atributo, incluiremos a anotação @Autowired, para solicitar ao Spring a injeção desse parâmetro. Não somos nós que vamos instanciar esse objeto, e sim o Spring (Esse código e o código completo da controller de autenticação está aqui).
+Vamos declarar o atributo na classe controller de autenticação. Deverá ser privado. Acima desse atributo, incluiremos a anotação @Autowired, para solicitar ao Spring a injeção desse parâmetro. Não somos nós que vamos instanciar esse objeto, e sim o Spring.
 A classe AuthenticationManager é do Spring. Porém, ele não injeta de forma automática o objeto AuthenticationManager, precisamos configurar isso no Spring Security. Como não configuramos, ele não cria o objeto AuthenticationManager e lança uma exceção.
-Precisamos implementar essa configuração e por ser uma configuração de segurança, faremos essa alteração na classe de configuração de segurança (Implementada aqui):
+Precisamos implementar essa configuração e por ser uma configuração de segurança, faremos essa alteração na classe de configuração de segurança:
 ~~~
 @Bean
 public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -215,7 +215,7 @@ O Spring já oferece uma classe que criptograma a senha com algoritmo BCrypt que
 
 Considerando que no banco de dados estamos usando o formato BCrypt de hashing da senha. Como o Spring identifica que estamos usando o BCrypt? É preciso configurar isso.
 
-Por ser uma configuração de segurança, voltaremos à classe de configurações de segurança (Implementada aqui):
+Por ser uma configuração de segurança, voltaremos à classe de configurações de segurança:
 ~~~
 @Bean
     public PasswordEncoder passwordEncoder() {
@@ -223,11 +223,11 @@ Por ser uma configuração de segurança, voltaremos à classe de configuraçõe
         }
 ~~~
 Com isso, configuramos o Spring para usar esse algoritmo de hashing de senha.
-&nbsp;
-
-&nbsp;
-
 ___
+
+&nbsp;
+
+&nbsp;
 
 ## ALTERANDO CLASSE USERMODEL PARA IMPLEMENTAR INTERFACE USERDETAILS
 Para o Spring Security identificar a classe usuário do nosso projeto, precisamos informar. Por exemplo, como ele vai saber qual atributo da classe que representa o usuário é o campo login? A forma para identificarmos isso é usando uma interface.
@@ -424,7 +424,7 @@ public class TokenDto {
     }
 }
 ~~~
-Agora podemos inserir a dependência da classe que cria o token e devolver o token na resposta do método que chama a autenticação (Na controller de autenticação criada aqui). A injeção ficará assim:
+Agora podemos inserir a dependência da classe que cria o token e devolver o token na resposta do método que chama a autenticação. A injeção ficará assim:
 @Autowired
     private TokenService tokenService;
 E o método deve ficar assim:
@@ -493,7 +493,7 @@ ___
 
 ### VALIDANDO TOKEN
 
-Primeiro vamos precisar criar na classe service de gerenciamento do token (Criada aqui) um método que obtém o subject/usuário do token para que possamos chamar esse método na classe filter:
+Primeiro vamos precisar criar na classe service de gerenciamento do token um método que obtém o subject/usuário do token para que possamos chamar esse método na classe filter:
 ~~~
 public String getSubject(String tokenJWT) {
         try {
@@ -508,8 +508,8 @@ public String getSubject(String tokenJWT) {
         }
     }
 ~~~
-E após criar esse método, voltar na classe filter e injetar a classe service de gerenciamento do token (Criada aqui) e a classe repository que recupera o usuário do banco de dados.
-Agora alteramos nossa classe de configurações de segurança (Criada aqui) primeiro injetando a classe filter que estamos criando agora e no método que retorna SecurityFilterChain alteramos informando quais URLs serão liberadas e quais ficarão restritas a quem estiver autenticado:
+E após criar esse método, voltar na classe filter e injetar a classe service de gerenciamento do token e a classe repository que recupera o usuário do banco de dados.
+Agora alteramos nossa classe de configurações de segurança primeiro injetando a classe filter que estamos criando agora e no método que retorna SecurityFilterChain alteramos informando quais URLs serão liberadas e quais ficarão restritas a quem estiver autenticado:
 
 ~~~
  @Bean
