@@ -1,8 +1,9 @@
 ﻿# Poc-Spring-Security
+ ###### [(Acessar versão PDF)](https://drive.google.com/file/d/1n7ndLdUjWHwboTafj6NUpZhNGygJyIU9/view?usp=share_link)
 
 ## ADICIONANDO DEPENDENCIA DO SPRING SECURITY
 
-Adicione dentro da tag xx do pom.xml as seguintes dependências:
+Adicione dentro da tag dependencies do pom.xml as seguintes dependências:
 
 ~~~
 <dependency>
